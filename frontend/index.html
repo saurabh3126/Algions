@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Algions bus booking and disruption recovery">
+  <title>Algions — Bookings that keep moving</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+  <div class="noise"></div>
+  <header class="topbar">
+    <button class="brand" data-view="home" aria-label="Algions home"><span class="brand-mark">A</span><span>Algions</span></button>
+    <nav aria-label="Primary navigation">
+      <button class="nav-link active" data-view="home">Book a trip</button>
+      <button class="nav-link" data-view="bookings">My tickets</button>
+      <button class="nav-link staff-only hidden" data-view="operator">Operator desk</button>
+      <button class="nav-link admin-only hidden" data-view="admin">Admin setup</button>
+    </nav>
+    <div id="accountArea"><button class="button ghost" id="openLogin">Sign in</button></div>
+  </header>
+
+  <main>
+    <section id="homeView" class="view active">
+      <div class="hero-shell">
+        <div class="hero-copy">
+          <div class="eyebrow"><span></span> Reliable journeys, even when plans change</div>
+          <h1>Your journey<br><em>keeps moving.</em></h1>
+          <p>Search, choose your seat and travel with confidence. If a bus changes, your ticket follows you automatically.</p>
+          <div class="trust-row"><span>✓ Seat-safe booking</span><span>✓ Clear cancellation</span><span>✓ Live journey recovery</span></div>
+        </div>
+        <form id="searchForm" class="search-card">
+          <div class="card-heading"><span>Find your next bus</span><small>One-way journey</small></div>
+          <label>Leaving from<input id="origin" value="Delhi" autocomplete="address-level2" required></label>
+          <button type="button" class="swap" id="swapStops" aria-label="Swap origin and destination">⇅</button>
+          <label>Going to<input id="destination" value="Jaipur" autocomplete="address-level2" required></label>
+          <label>Travel date<input id="travelDate" type="date" required></label>
+          <button class="button primary wide" type="submit">Search buses <span>→</span></button>
+        </form>
+      </div>
+      <div class="content-shell">
+        <div id="searchIntro" class="section-intro">
+          <span class="section-kicker">Why Algions</span>
+          <h2>A calmer way to travel</h2>
+          <div class="feature-grid">
+            <article><b>01</b><h3>Your seat stays yours</h3><p>Atomic booking protects every confirmed seat, including simultaneous requests.</p></article>
+            <article><b>02</b><h3>Your PNR stays with you</h3><p>When operations change, your booking history and ticket remain easy to follow.</p></article>
+            <article><b>03</b><h3>No confusing surprises</h3><p>Clear refund status, journey changes and passenger details live in one place.</p></article>
+          </div>
+        </div>
+        <section id="resultsSection" class="hidden" aria-live="polite">
+          <div class="section-heading"><div><span class="section-kicker">Available journeys</span><h2 id="resultsTitle">Choose your bus</h2></div><span id="resultsCount" class="count-pill"></span></div>
+          <div id="resultsList" class="results-list"></div>
+        </section>
+      </div>
+    </section>
+
+    <section id="bookingsView" class="view content-shell page-view">
+      <div class="page-title"><div><span class="section-kicker">Your journeys</span><h1>My tickets</h1><p>Confirmed, changed and cancelled trips in one timeline.</p></div><button class="button primary" data-view="home">Book another trip</button></div>
+      <div id="bookingsList" class="ticket-list"></div>
+    </section>
+
+    <section id="operatorView" class="view content-shell page-view">
+      <div class="page-title"><div><span class="section-kicker">Operations control</span><h1>Today’s network</h1><p>Watch occupancy, review manifests and recover disrupted journeys.</p></div><button class="button ghost" id="refreshOperations">Refresh data</button></div>
+      <div class="metric-grid" id="metrics"></div>
+      <div class="operator-layout">
+        <section><div class="panel-title"><h2>Scheduled trips</h2><span id="tripCount"></span></div><div id="operatorTrips" class="ops-list"></div></section>
+        <aside id="tripDetail" class="detail-panel"><div class="empty-state compact"><div class="empty-icon">↗</div><h3>Select a trip</h3><p>Choose a journey to view its manifest and recovery tools.</p></div></aside>
+      </div>
+    </section>
+
+    <section id="adminView" class="view content-shell page-view">
+      <div class="page-title"><div><span class="section-kicker">System configuration</span><h1>Admin setup</h1><p>Create the network records required for searchable, bookable trips.</p></div><a class="button ghost" href="/docs" target="_blank">API documentation ↗</a></div>
+      <div class="admin-tabs" role="tablist" aria-label="Admin setup sections"><button class="active" data-admin-tab="operators">Operators</button><button data-admin-tab="buses">Buses</button><button data-admin-tab="routes">Routes</button><button data-admin-tab="trips">Trips</button><button data-admin-tab="accounts">Staff accounts</button></div>
+      <div class="admin-layout">
+        <section class="admin-form-card">
+          <form id="operatorForm" class="admin-form active" data-admin-panel="operators"><span class="section-kicker">New operator</span><h2>Add a bus operator</h2><label>Operator name<input name="name" required maxlength="120"></label><button class="button primary wide">Create operator</button></form>
+          <form id="busForm" class="admin-form" data-admin-panel="buses"><span class="section-kicker">New vehicle</span><h2>Add a bus and seats</h2><label>Operator<select name="operatorId" class="operator-options" required></select></label><label>Registration number<input name="registration" required></label><label>Seat labels<textarea name="seats" rows="4" placeholder="1A, 1B, 1C, 1D" required></textarea><small>Comma-separated and unique.</small></label><button class="button primary wide">Create bus</button></form>
+          <form id="routeForm" class="admin-form" data-admin-panel="routes"><span class="section-kicker">New route</span><h2>Add ordered stops</h2><label>Route name<input name="name" required></label><label>Stops in travel order<textarea name="stops" rows="4" placeholder="Delhi, Gurugram, Jaipur" required></textarea></label><button class="button primary wide">Create route</button></form>
+          <form id="tripForm" class="admin-form" data-admin-panel="trips"><span class="section-kicker">New departure</span><h2>Schedule a trip</h2><label>Bus<select name="busId" class="bus-options" required></select></label><label>Route<select name="routeId" class="route-options" required></select></label><div class="field-pair"><label>Departure<input name="departure" type="datetime-local" required></label><label>Arrival<input name="arrival" type="datetime-local" required></label></div><div class="field-pair"><label>Fare in rupees<input name="fare" type="number" min="1" required></label><label>Cancellation cutoff hours<input name="cancellationHours" type="number" min="0" value="2" required></label></div><label>Refund percentage<input name="refundPercent" type="number" min="0" max="100" value="90" required></label><button class="button primary wide">Schedule trip</button></form>
+          <form id="accountForm" class="admin-form" data-admin-panel="accounts"><span class="section-kicker">New staff member</span><h2>Create operator login</h2><label>Full name<input name="name" required></label><label>Email<input name="email" type="email" required></label><label>Temporary password<input name="password" type="password" minlength="12" required></label><label>Operator<select name="operatorId" class="operator-options" required></select></label><button class="button primary wide">Create staff account</button></form>
+          <div id="adminFormError" class="form-error hidden"></div>
+        </section>
+        <section class="admin-records"><div class="panel-title"><h2 id="adminRecordsTitle">Operators</h2><button class="button ghost" id="refreshAdmin" type="button">Refresh</button></div><div id="adminRecordsList" class="record-list"></div></section>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="loginDialog">
+    <form id="loginForm" method="dialog" class="modal-card">
+      <button type="button" class="modal-close" aria-label="Close">×</button>
+      <span class="section-kicker">Welcome back</span><h2>Sign in to Algions</h2><p>Use your customer or operator demo account.</p>
+      <label>Email<input id="loginEmail" type="email" value="customer@routerelay.test" required></label>
+      <label>Password<input id="loginPassword" type="password" minlength="12" required></label>
+      <div id="loginError" class="form-error hidden"></div>
+      <button class="button primary wide" type="submit">Sign in</button>
+      <div class="demo-switch"><span>Demo role</span><button type="button" data-email="customer@routerelay.test" class="active">Customer</button><button type="button" data-email="operator@routerelay.test">Operator</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="seatDialog">
+    <div class="booking-modal">
+      <button type="button" class="modal-close" aria-label="Close">×</button>
+      <div class="booking-summary" id="bookingSummary"></div>
+      <form id="bookingForm">
+        <span class="section-kicker">Choose your place</span><h2>Select a seat</h2>
+        <div class="seat-legend"><span><i class="available"></i>Available</span><span><i class="selected"></i>Selected</span><span><i class="occupied"></i>Booked</span></div>
+        <div class="bus-frame"><div class="driver">◯</div><div id="seatMap" class="seat-map"></div></div>
+        <div class="passenger-fields journey-points"><label>Boarding point<select id="boardingPoint" required></select></label><label>Dropping point<select id="droppingPoint" required></select></label></div>
+        <div class="passenger-fields"><label>Passenger name<input id="passengerName" required></label><label>Age<input id="passengerAge" type="number" min="1" max="120" required></label></div>
+        <div id="bookingError" class="form-error hidden"></div>
+        <button class="button primary wide" type="submit">Confirm booking <span id="confirmFare"></span></button>
+      </form>
+    </div>
+  </dialog>
+
+  <dialog id="recoveryDialog">
+    <form id="recoveryForm" class="modal-card recovery-card">
+      <button type="button" class="modal-close" aria-label="Close">×</button>
+      <span class="section-kicker">Journey recovery</span><h2>Assign a replacement bus</h2><p id="recoveryCopy"></p>
+      <label>Replacement bus<select id="replacementBus" required></select></label>
+      <div id="recoveryPreview" class="preview-box hidden"></div>
+      <div id="recoveryError" class="form-error hidden"></div>
+      <button id="previewReplacement" class="button secondary wide" type="button">Preview impact</button>
+      <button id="confirmReplacement" class="button primary wide hidden" type="submit">Confirm safe replacement</button>
+    </form>
+  </dialog>
+  <div id="toast" role="status" aria-live="polite"></div>
+  <script type="module" src="app.js"></script>
+</body>
+</html>

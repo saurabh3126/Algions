@@ -1,0 +1,27 @@
+{
+  "openapi":"3.0.3",
+  "info":{"title":"Algions Bus Booking API","version":"1.0.0","description":"API for customer booking, operator reporting and disruption recovery. Money values use integer INR paise and timestamps use ISO 8601 UTC."},
+  "servers":[{"url":"/"}],
+  "components":{"securitySchemes":{"bearerAuth":{"type":"http","scheme":"bearer"}},"schemas":{"Login":{"type":"object","required":["email","password"],"properties":{"email":{"type":"string","format":"email"},"password":{"type":"string","minLength":12}}},"Booking":{"type":"object","required":["tripId","seat","boarding","drop","passenger"],"properties":{"tripId":{"type":"string"},"seat":{"type":"string"},"boarding":{"type":"string"},"drop":{"type":"string"},"passenger":{"type":"object","properties":{"name":{"type":"string"},"age":{"type":"integer"}}}}},"Trip":{"type":"object","required":["busId","routeId","departure","arrival","fare"],"properties":{"busId":{"type":"string"},"routeId":{"type":"string"},"departure":{"type":"string","format":"date-time"},"arrival":{"type":"string","format":"date-time"},"fare":{"type":"integer","description":"INR paise"},"cancellationHours":{"type":"number"},"refundPercent":{"type":"integer"}}}}},
+  "paths":{
+    "/health":{"get":{"summary":"Service health"}},"/ready":{"get":{"summary":"Database readiness"}},
+    "/api/auth/register":{"post":{"summary":"Register customer","requestBody":{"required":true,"content":{"application/json":{"schema":{"type":"object","required":["name","email","password"]}}}}}},
+    "/api/auth/login":{"post":{"summary":"Create an eight-hour session","requestBody":{"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/Login"}}}}}},
+    "/api/auth/logout":{"post":{"summary":"Revoke current session","security":[{"bearerAuth":[]}]}},
+    "/api/operators":{"get":{"summary":"List operators","security":[{"bearerAuth":[]}]},"post":{"summary":"Create operator","security":[{"bearerAuth":[]}],"requestBody":{"content":{"application/json":{"schema":{"type":"object","required":["name"]}}}}}},
+    "/api/buses":{"get":{"summary":"List scoped buses","security":[{"bearerAuth":[]}]},"post":{"summary":"Create bus and seat layout","security":[{"bearerAuth":[]}],"requestBody":{"content":{"application/json":{"schema":{"type":"object","required":["operatorId","registration","seats"]}}}}}},
+    "/api/routes":{"get":{"summary":"List routes","security":[{"bearerAuth":[]}]},"post":{"summary":"Create ordered route stops","security":[{"bearerAuth":[]}],"requestBody":{"content":{"application/json":{"schema":{"type":"object","required":["name","stops"]}}}}}},
+    "/api/trips":{"get":{"summary":"Search future trips by origin, destination and date"},"post":{"summary":"Schedule a trip","security":[{"bearerAuth":[]}],"requestBody":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/Trip"}}}}}},
+    "/api/trips/{id}/seats":{"get":{"summary":"Get live seat availability"}},
+    "/api/trips/{id}/policy":{"patch":{"summary":"Update fare and cancellation policy","security":[{"bearerAuth":[]}],"requestBody":{"content":{"application/json":{"schema":{"type":"object","required":["fare","cancellationHours","refundPercent"]}}}}}},
+    "/api/bookings":{"get":{"summary":"List own booking history","security":[{"bearerAuth":[]}]},"post":{"summary":"Confirm seat using Idempotency-Key header","security":[{"bearerAuth":[]}],"requestBody":{"content":{"application/json":{"schema":{"$ref":"#/components/schemas/Booking"}}}}}},
+    "/api/bookings/{id}":{"get":{"summary":"Get authorized ticket","security":[{"bearerAuth":[]}]}},
+    "/api/bookings/{id}/cancel":{"post":{"summary":"Cancel and simulate refund","security":[{"bearerAuth":[]}]}},
+    "/api/operator/trips":{"get":{"summary":"List scoped operator schedules","security":[{"bearerAuth":[]}]}},
+    "/api/operator/trips/{id}/report":{"get":{"summary":"Manifest, occupancy and booking summary","security":[{"bearerAuth":[]}]}},
+    "/api/operator/trips/{id}/audit":{"get":{"summary":"Material business action history","security":[{"bearerAuth":[]}]}},
+    "/api/operator/trips/{id}/disrupt":{"post":{"summary":"Mark future trip disrupted","security":[{"bearerAuth":[]}],"requestBody":{"content":{"application/json":{"schema":{"type":"object","required":["reason"]}}}}}},
+    "/api/operator/trips/{id}/replacement-preview":{"post":{"summary":"Preview replacement impact","security":[{"bearerAuth":[]}]}},
+    "/api/operator/trips/{id}/replace-bus":{"post":{"summary":"Confirm revision-safe replacement","security":[{"bearerAuth":[]}]}}
+  }
+}
