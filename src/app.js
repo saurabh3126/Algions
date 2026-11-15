@@ -10,6 +10,7 @@ import { hashPassword, verifyPassword, token, hashToken } from './security.js';
 import { schemas, id, oid, text, fail, authorizedOperator, validStops } from './domain.js';
 import { book, cancel, replaceBus, audit } from './bookings.js';
 export const app = express();
+app.set('trust proxy', 1); // Required for Render/reverse-proxy: lets express-rate-limit read X-Forwarded-For correctly
 app.use(helmet(), cors({ origin: process.env.FRONTEND_ORIGIN || 'http://localhost:5173' }), express.json({ limit: '32kb' }));
 app.use(rateLimit({ windowMs: 60000, limit: 300 }));
 const authLimit = rateLimit({ windowMs: 15 * 60000, limit: 30 });
