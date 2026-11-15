@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: algions
+    runtime: node
+    plan: free
+    buildCommand: npm ci
+    startCommand: node --env-file-if-exists=.env src/server.js
+    envVars:
+      - key: NODE_VERSION
+        value: 22
+      - key: PORT
+        value: 10000
+      - key: MONGODB_URI
+        sync: false   # set this in Render dashboard — your MongoDB Atlas URI
+      - key: MONGODB_DB
+        value: routerelay
+      - key: FRONTEND_ORIGIN
+        sync: false   # set to your Render service URL e.g. https://algions.onrender.com
+      - key: DEMO_PASSWORD
+        generateValue: true
+    healthCheckPath: /health
