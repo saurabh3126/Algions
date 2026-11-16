@@ -5,7 +5,7 @@ export async function connect() {
   await client.connect();
   const hello = await db.admin().command({ hello: 1 });
   if (!hello.setName && hello.msg !== 'isdbgrid') throw new Error('MongoDB replica set required for booking transactions');
-  for (const name of ['users','sessions','operators','buses','routes','trips','bookings','audit']) {
+  for (const name of ['users','sessions','operators','buses','routes','trips','bookings','audit','operator_requests']) {
     if (!(await db.listCollections({ name }).hasNext())) await db.createCollection(name);
   }
   await db.collection('users').createIndex({ email: 1 }, { unique: true });

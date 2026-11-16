@@ -94,6 +94,8 @@ JSON requests/responses. Protected requests use `Authorization: Bearer <accessTo
 | POST /api/auth/logout | Signed in | Revoke session |
 | GET /api/operators, /api/buses, /api/routes | Staff | Setup lists |
 | POST /api/operators | Admin | `{name}` |
+| POST /api/operator-requests | Public | `{name,email,companyName,phone,fleetSize,message}` — request operator access |
+| GET /api/operator-requests | Admin | List pending operator onboarding applications |
 | POST /api/buses | Admin | `{operatorId,registration,seats:["1A","1B"]}` |
 | POST /api/routes | Admin | `{name,stops:["Delhi","Gurugram","Jaipur"]}` |
 | PUT /api/operators/:id, /api/buses/:id, /api/routes/:id | Admin | Same full body as create |

@@ -21,7 +21,7 @@
       <button class="nav-link staff-only hidden" data-view="operator">Operator desk</button>
       <button class="nav-link admin-only hidden" data-view="admin">Admin setup</button>
     </nav>
-    <div id="accountArea"><button class="button ghost" id="openLogin">Sign in</button></div>
+    <div id="accountArea"><button class="button ghost" id="openLogin">Sign in</button><button class="button primary" id="openRegister">Create account</button></div>
   </header>
 
   <main>
@@ -75,7 +75,7 @@
 
     <section id="adminView" class="view content-shell page-view">
       <div class="page-title"><div><span class="section-kicker">System configuration</span><h1>Admin setup</h1><p>Create the network records required for searchable, bookable trips.</p></div><a class="button ghost" href="/docs" target="_blank">API documentation ↗</a></div>
-      <div class="admin-tabs" role="tablist" aria-label="Admin setup sections"><button class="active" data-admin-tab="operators">Operators</button><button data-admin-tab="buses">Buses</button><button data-admin-tab="routes">Routes</button><button data-admin-tab="trips">Trips</button><button data-admin-tab="accounts">Staff accounts</button></div>
+      <div class="admin-tabs" role="tablist" aria-label="Admin setup sections"><button class="active" data-admin-tab="operators">Operators</button><button data-admin-tab="buses">Buses</button><button data-admin-tab="routes">Routes</button><button data-admin-tab="trips">Trips</button><button data-admin-tab="accounts">Staff accounts</button><button data-admin-tab="requests">Operator requests</button></div>
       <div class="admin-layout">
         <section class="admin-form-card">
           <form id="operatorForm" class="admin-form active" data-admin-panel="operators"><span class="section-kicker">New operator</span><h2>Add a bus operator</h2><label>Operator name<input name="name" required maxlength="120"></label><button class="button primary wide">Create operator</button></form>
@@ -91,15 +91,73 @@
   </main>
 
   <dialog id="loginDialog">
-    <form id="loginForm" method="dialog" class="modal-card">
+    <div class="modal-card">
       <button type="button" class="modal-close" aria-label="Close">×</button>
-      <span class="section-kicker">Welcome back</span><h2>Sign in to Algions</h2><p>Use your customer or operator demo account.</p>
-      <label>Email<input id="loginEmail" type="email" value="customer@routerelay.test" required></label>
-      <label>Password<input id="loginPassword" type="password" minlength="12" required></label>
-      <div id="loginError" class="form-error hidden"></div>
-      <button class="button primary wide" type="submit">Sign in</button>
-      <div class="demo-switch"><span>Demo role</span><button type="button" data-email="customer@routerelay.test" class="active">Customer</button><button type="button" data-email="operator@routerelay.test">Operator</button></div>
-    </form>
+
+      <div class="auth-tabs" role="tablist">
+        <button type="button" class="auth-tab active" id="authTabLogin">Sign in</button>
+        <button type="button" class="auth-tab" id="authTabRegister">Create account</button>
+      </div>
+
+      <!-- Sign In Section -->
+      <div id="signInPanel">
+        <span class="section-kicker">Welcome back</span>
+        <h2>Sign in to Algions</h2>
+        <p>Access your tickets or operations desk.</p>
+        <form id="loginForm">
+          <label>Email<input id="loginEmail" type="email" value="customer@routerelay.test" required></label>
+          <label>Password<input id="loginPassword" type="password" minlength="12" required></label>
+          <div id="loginError" class="form-error hidden"></div>
+          <button class="button primary wide" type="submit">Sign in</button>
+          <div class="demo-switch">
+            <span>Demo role</span>
+            <button type="button" data-email="customer@routerelay.test" class="active">Customer</button>
+            <button type="button" data-email="operator@routerelay.test">Operator</button>
+            <button type="button" data-email="admin@routerelay.test">Admin</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Create Account Section -->
+      <div id="registerPanel" class="hidden">
+        <span class="section-kicker">Join Algions</span>
+        <h2>Create an account</h2>
+        <p>Choose your account type below.</p>
+
+        <div class="role-selector">
+          <button type="button" class="role-pill active" id="rolePillCustomer">Passenger</button>
+          <button type="button" class="role-pill" id="rolePillOperator">Bus Operator</button>
+        </div>
+
+        <!-- Passenger Registration (Instant) -->
+        <form id="customerRegisterForm">
+          <label>Full name<input id="regName" placeholder="e.g. Saurabh Sharma" required></label>
+          <label>Email address<input id="regEmail" type="email" placeholder="you@example.com" required></label>
+          <label>Password<input id="regPassword" type="password" minlength="12" placeholder="Minimum 12 characters" required></label>
+          <div id="regError" class="form-error hidden"></div>
+          <button class="button primary wide" type="submit">Create Passenger Account</button>
+          <small class="form-hint">Instant access. You can book seats immediately.</small>
+        </form>
+
+        <!-- Operator Request Form (Approval Required) -->
+        <form id="operatorRequestForm" class="hidden">
+          <div class="operator-notice">
+            <strong>Staff policy: verification required</strong>
+            <p>Operators cannot self-register directly. Submit your business request below — an administrator will review and provision your operator login.</p>
+          </div>
+          <label>Contact person name<input id="opReqName" placeholder="e.g. Rajesh Kumar" required></label>
+          <label>Business email<input id="opReqEmail" type="email" placeholder="contact@travels.com" required></label>
+          <label>Agency / Operator name<input id="opReqCompany" placeholder="e.g. Royal Travels" required></label>
+          <label>Contact phone<input id="opReqPhone" type="tel" placeholder="+91 98765 43210" required></label>
+          <label>Fleet size<input id="opReqFleet" type="number" min="1" placeholder="Number of buses" required></label>
+          <label>Operating routes / note (optional)<textarea id="opReqNotes" rows="2" placeholder="e.g. Delhi to Lucknow, Jaipur routes"></textarea></label>
+          <div id="opReqError" class="form-error hidden"></div>
+          <div id="opReqSuccess" class="success-box hidden"></div>
+          <button class="button primary wide" type="submit" id="opReqSubmitBtn">Submit Operator Request</button>
+        </form>
+      </div>
+
+    </div>
   </dialog>
 
   <dialog id="seatDialog">

@@ -12,10 +12,10 @@ npm audit --omit=dev --audit-level=high
 
 ## Result
 
-- 13 tests passed
+- 14 tests passed
 - 0 tests failed
 - 5 focused domain unit tests passed
-- 8 HTTP and MongoDB integration scenarios passed
+- 9 HTTP and MongoDB integration scenarios passed
 - 0 dependency vulnerabilities reported by npm audit
 
 ## Verified rules
@@ -25,7 +25,8 @@ npm audit --omit=dev --audit-level=high
 - Cancellation cutoff is enforced.
 - Operators are restricted to their assigned business.
 - Duplicate seat labels and duplicate route stops are rejected.
-- Registration cannot create an administrator.
+- Registration creates customer accounts; administrative or operator privileges cannot be self-assigned.
+- Operators submit onboarding requests subject to administrator review.
 - Login and token revocation work.
 - Simultaneous requests cannot confirm the same seat.
 - Idempotent replays return the original PNR.

@@ -1,7 +1,7 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
-process.env.MONGODB_DB = `routerelay_test_${randomUUID().replaceAll('-', '')}`;
+process.env.MONGODB_DB = `rr_test_${randomUUID().replaceAll('-', '').slice(0, 16)}`;
 const { app } = await import('../src/app.js');
 const { connect, db, client } = await import('../src/db.js');
 const { hashPassword } = await import('../src/security.js');
@@ -42,6 +42,13 @@ test('registration cannot grant admin privileges and login/logout work', async (
   const login = await api('/api/auth/login', 'POST', null, { email: 'new@test.example', password: 'long-password-123' });
   assert.equal((await api('/api/auth/logout', 'POST', login.data.accessToken)).status, 204);
   assert.equal((await api('/api/auth/me', 'GET', login.data.accessToken)).status, 401);
+});
+test('operators can submit requests and admins can review them', async () => {
+  const req = await api('/api/operator-requests', 'POST', null, { name: 'Applicant', email: 'applicant@operator.example', companyName: 'Express Travels', phone: '+919999999999', fleetSize: 5, message: 'Delhi-Agra route' });
+  assert.equal(req.status, 201);
+  const list = await api('/api/operator-requests', 'GET', admin);
+  assert.equal(list.status, 200);
+  assert(list.data.some(r => r.email === 'applicant@operator.example' && r.status === 'pending'));
 });
 test('simultaneous seat requests produce exactly one booking; replay and cancellation preserve integrity', async () => {
   const data = bookingData('1A');

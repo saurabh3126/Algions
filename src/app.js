@@ -82,6 +82,26 @@ app.post('/api/operator-accounts', auth, roles('admin'), async (req, res) => {
   const result = await db.collection('users').insertOne(user);
   res.status(201).json(safeUser({ ...user, _id: result.insertedId }));
 });
+app.post('/api/operator-requests', authLimit, async (req, res) => {
+  const data = z.object({
+    name: text,
+    email: z.email().toLowerCase(),
+    companyName: text,
+    phone: z.string().trim().min(7).max(20),
+    fleetSize: z.coerce.number().int().min(1).max(1000).optional(),
+    message: z.string().trim().max(500).optional(),
+  }).parse(req.body);
+  const existingUser = await db.collection('users').findOne({ email: data.email });
+  if (existingUser) fail(409, 'An account with this email already exists');
+  const existingReq = await db.collection('operator_requests').findOne({ email: data.email, status: 'pending' });
+  if (existingReq) fail(409, 'A pending operator request with this email is already under review');
+  const doc = { ...data, status: 'pending', createdAt: new Date() };
+  const result = await db.collection('operator_requests').insertOne(doc);
+  res.status(201).json({ id: result.insertedId, message: 'Operator request submitted successfully. An administrator will review your application.' });
+});
+app.get('/api/operator-requests', auth, roles('admin'), async (req, res) => {
+  res.json(await db.collection('operator_requests').find({}, page(req)).sort({ createdAt: -1 }).toArray());
+});
 app.patch('/api/trips/:id/policy', auth, roles('admin','operator'), async (req, res) => {
   const data = z.object({ fare: z.number().int().positive().max(10000000), cancellationHours: z.number().min(0).max(168), refundPercent: z.number().int().min(0).max(100) }).parse(req.body);
   await transaction(async session => {

@@ -52,10 +52,94 @@ function showView(name) {
 function renderAccount() {
   $$('.staff-only').forEach(el => el.classList.toggle('hidden', !['operator', 'admin'].includes(state.user?.role)));
   $$('.admin-only').forEach(el => el.classList.toggle('hidden', state.user?.role !== 'admin'));
-  $('#accountArea').innerHTML = state.user ? `<div class="account-chip"><div class="avatar">${escapeHtml(state.user.name[0])}</div><div><strong>${escapeHtml(state.user.name)}</strong><small>${escapeHtml(state.user.role)}</small></div><button class="button ghost" id="logoutButton">Log out</button></div>` : '<button class="button ghost" id="openLogin">Sign in</button>';
-  $('#openLogin')?.addEventListener('click', openLogin);
+  $('#accountArea').innerHTML = state.user ? `<div class="account-chip"><div class="avatar">${escapeHtml(state.user.name[0])}</div><div><strong>${escapeHtml(state.user.name)}</strong><small>${escapeHtml(state.user.role)}</small></div><button class="button ghost" id="logoutButton">Log out</button></div>` : '<button class="button ghost" id="openLogin">Sign in</button><button class="button primary" id="openRegister">Create account</button>';
+  $('#openLogin')?.addEventListener('click', () => openAuth('login'));
+  $('#openRegister')?.addEventListener('click', () => openAuth('register'));
 }
-function openLogin() { $('#loginError').classList.add('hidden'); $('#loginDialog').showModal(); }
+function openLogin() { openAuth('login'); }
+function openAuth(tab = 'login') {
+  $('#loginError').classList.add('hidden');
+  $('#regError')?.classList.add('hidden');
+  $('#opReqError')?.classList.add('hidden');
+  $('#opReqSuccess')?.classList.add('hidden');
+  switchAuthTab(tab);
+  $('#loginDialog').showModal();
+}
+function switchAuthTab(tab) {
+  const isLogin = tab === 'login';
+  $('#authTabLogin')?.classList.toggle('active', isLogin);
+  $('#authTabRegister')?.classList.toggle('active', !isLogin);
+  $('#signInPanel')?.classList.toggle('hidden', !isLogin);
+  $('#registerPanel')?.classList.toggle('hidden', isLogin);
+}
+function switchRolePill(role) {
+  const isCust = role === 'customer';
+  $('#rolePillCustomer')?.classList.toggle('active', isCust);
+  $('#rolePillOperator')?.classList.toggle('active', !isCust);
+  $('#customerRegisterForm')?.classList.toggle('hidden', !isCust);
+  $('#operatorRequestForm')?.classList.toggle('hidden', isCust);
+  $('#regError')?.classList.add('hidden');
+  $('#opReqError')?.classList.add('hidden');
+  $('#opReqSuccess')?.classList.add('hidden');
+}
+$('#authTabLogin')?.addEventListener('click', () => switchAuthTab('login'));
+$('#authTabRegister')?.addEventListener('click', () => switchAuthTab('register'));
+$('#rolePillCustomer')?.addEventListener('click', () => switchRolePill('customer'));
+$('#rolePillOperator')?.addEventListener('click', () => switchRolePill('operator'));
+
+$('#customerRegisterForm')?.addEventListener('submit', async event => {
+  event.preventDefault();
+  const button = event.submitter;
+  button.disabled = true;
+  $('#regError').classList.add('hidden');
+  try {
+    const name = $('#regName').value.trim();
+    const email = $('#regEmail').value.trim();
+    const password = $('#regPassword').value;
+    await request('/auth/register', { method: 'POST', body: JSON.stringify({ name, email, password }) });
+    const loginData = await request('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) });
+    state.token = loginData.accessToken;
+    state.user = loginData.user;
+    sessionStorage.setItem('rr_token', state.token);
+    sessionStorage.setItem('rr_user', JSON.stringify(state.user));
+    $('#loginDialog').close();
+    renderAccount();
+    toast(`Welcome, ${state.user.name}! Account created.`);
+  } catch (error) {
+    $('#regError').textContent = error.message;
+    $('#regError').classList.remove('hidden');
+  } finally {
+    button.disabled = false;
+  }
+});
+
+$('#operatorRequestForm')?.addEventListener('submit', async event => {
+  event.preventDefault();
+  const button = event.submitter;
+  button.disabled = true;
+  $('#opReqError').classList.add('hidden');
+  $('#opReqSuccess').classList.add('hidden');
+  try {
+    const data = {
+      name: $('#opReqName').value.trim(),
+      email: $('#opReqEmail').value.trim(),
+      companyName: $('#opReqCompany').value.trim(),
+      phone: $('#opReqPhone').value.trim(),
+      fleetSize: Number($('#opReqFleet').value),
+      message: $('#opReqNotes').value.trim() || undefined,
+    };
+    const res = await request('/operator-requests', { method: 'POST', body: JSON.stringify(data) });
+    $('#opReqSuccess').innerHTML = `<strong>✓ Request submitted!</strong><p>${escapeHtml(res.message || 'An administrator will review your application.')}</p>`;
+    $('#opReqSuccess').classList.remove('hidden');
+    $('#operatorRequestForm').reset();
+    toast('Operator request submitted for review');
+  } catch (error) {
+    $('#opReqError').textContent = error.message;
+    $('#opReqError').classList.remove('hidden');
+  } finally {
+    button.disabled = false;
+  }
+});
 async function logout(callApi) {
   const oldToken = state.token;
   state.token = null; state.user = null; sessionStorage.removeItem('rr_token'); sessionStorage.removeItem('rr_user'); renderAccount(); showView('home'); toast('Signed out');
@@ -186,8 +270,14 @@ $('#replacementBus').addEventListener('change', () => { state.preview = null; $(
 async function loadAdmin() {
   $('#adminRecordsList').innerHTML = '<div class="empty-state compact"><p>Loading configuration…</p></div>';
   try {
-    const [operators, buses, routes, trips] = await Promise.all([allRecords('/operators'), allRecords('/buses'), allRecords('/routes'), allRecords('/operator/trips')]);
-    state.admin = { operators, buses, routes, trips }; populateAdminOptions(); renderAdminRecords();
+    const [operators, buses, routes, trips, requests] = await Promise.all([
+      allRecords('/operators'),
+      allRecords('/buses'),
+      allRecords('/routes'),
+      allRecords('/operator/trips'),
+      allRecords('/operator-requests').catch(() => []),
+    ]);
+    state.admin = { operators, buses, routes, trips, requests }; populateAdminOptions(); renderAdminRecords();
   } catch (error) { $('#adminRecordsList').innerHTML = `<div class="form-error">${escapeHtml(error.message)}</div>`; }
 }
 function populateAdminOptions() {
@@ -197,14 +287,28 @@ function populateAdminOptions() {
   $('.route-options').innerHTML = '<option value="">Choose route</option>' + state.admin.routes.map(r => `<option value="${r._id}">${escapeHtml(r.name)}</option>`).join('');
 }
 function renderAdminRecords() {
-  const labels = { operators: 'Operators', buses: 'Buses and seat layouts', routes: 'Routes and ordered stops', trips: 'Scheduled trips', accounts: 'Staff accounts' }; $('#adminRecordsTitle').textContent = labels[state.adminTab];
+  const labels = { operators: 'Operators', buses: 'Buses and seat layouts', routes: 'Routes and ordered stops', trips: 'Scheduled trips', accounts: 'Staff accounts', requests: 'Operator requests' }; $('#adminRecordsTitle').textContent = labels[state.adminTab] || 'Records';
   const records = state.adminTab === 'accounts' ? [] : state.admin[state.adminTab];
   pagedList($('#adminRecordsList'), records || [], record => {
     if (state.adminTab === 'operators') return `<div class="record-row"><div><strong>${escapeHtml(record.name)}</strong><small>${record._id}</small></div><span class="status">active</span></div>`;
     if (state.adminTab === 'buses') return `<div class="record-row"><div><strong>${escapeHtml(record.registration)}</strong><small>${record.seats.length} seats · ${escapeHtml(record.seats.join(', '))}</small></div><span class="status">vehicle</span></div>`;
     if (state.adminTab === 'routes') return `<div class="record-row"><div><strong>${escapeHtml(record.name)}</strong><small>${escapeHtml(record.stops.join(' → '))}</small></div><span class="status">${record.stops.length} stops</span></div>`;
+    if (state.adminTab === 'requests') return `<div class="record-row"><div><strong>${escapeHtml(record.companyName || 'Operator')} — ${escapeHtml(record.name)}</strong><small>${escapeHtml(record.email)} · ${escapeHtml(record.phone || '')} · Fleet: ${record.fleetSize || 1} buses</small>${record.message ? `<small style="display:block;margin-top:4px">Note: ${escapeHtml(record.message)}</small>` : ''}</div><div><span class="status">${escapeHtml(record.status || 'pending')}</span>${record.status === 'pending' ? `<button type="button" class="button ghost prefill-staff" data-name="${escapeHtml(record.name)}" data-email="${escapeHtml(record.email)}" style="margin-left:8px;padding:6px 12px;font-size:11px">Create Login</button>` : ''}</div></div>`;
     return `<div class="record-row"><div><strong>${escapeHtml(record.routeName)}</strong><small>${date(record.departure)} · ${time(record.departure)} · ${money(record.fare)}</small></div><span class="status">${escapeHtml(record.status)}</span></div>`;
   }, body => {
+    body.querySelectorAll('.prefill-staff').forEach(btn => {
+      btn.onclick = () => {
+        state.adminTab = 'accounts';
+        $$('[data-admin-tab]').forEach(b => b.classList.toggle('active', b.dataset.adminTab === 'accounts'));
+        $$('[data-admin-panel]').forEach(panel => panel.classList.toggle('active', panel.dataset.adminPanel === 'accounts'));
+        const form = $('#accountForm');
+        form.querySelector('input[name="name"]').value = btn.dataset.name;
+        form.querySelector('input[name="email"]').value = btn.dataset.email;
+        form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        toast('Applicant details loaded. Select operator & set password.');
+        renderAdminRecords();
+      };
+    });
     if (!['operators','buses','routes'].includes(state.adminTab)) return;
     [...body.querySelectorAll('.record-row')].forEach(row => {
       const title = row.querySelector('strong').textContent;
